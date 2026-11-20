@@ -1,0 +1,145 @@
+Case 1: ES Module
+{
+  "type": "module"
+}
+
+maths/index.js
+
+export const num = 20;
+
+app.js
+
+import { num } from "maths";
+
+console.log(num);
+
+✅ Works
+
+Case 2: CommonJS
+{
+  "type": "commonjs"
+}
+
+maths/index.js
+
+module.exports = 20;
+
+app.js
+
+const num = require("maths");
+
+console.log(num);
+
+✅ Also works
+
+Your actual question is:
+
+"If there is no package.json inside the maths folder, then how does Node know whether to use CommonJS or ES Module?"
+
+Answer
+
+Node doesn't need a separate package.json inside maths because your maths folder is just a local folder inside your project. It inherits the module system from how you wrote the code and the project configuration.
+
+When you write:
+
+module.exports = 20;
+
+Node executes it as CommonJS.
+
+When you write:
+
+export const num = 20;
+
+Node executes it as an ES Module (when your project is configured for ESM).
+
+The important point is that you are changing both the project configuration and the source code.
+
+Then why do published npm packages include their own package.json?
+
+Because a real npm package is independent of your project.
+
+Imagine this:
+
+your-project/
+│
+├── package.json
+│
+└── node_modules/
+    └── lodash/
+        ├── package.json
+        ├── index.js
+
+Your project may be:
+
+{
+  "type": "module"
+}
+
+But lodash might be:
+
+{
+  "type": "commonjs"
+}
+
+Node must know how to interpret each package independently.
+
+That's why every published npm package has its own package.json.
+
+Why doesn't your experiment need one?
+
+Because you manually created:
+
+node_modules/
+    maths/
+        index.js
+
+It's just a simple folder with one entry file. Node's fallback rule is:
+
+Find package
+      │
+      ▼
+package.json exists?
+      │
+   No ▼
+Use index.js
+
+Since there is only one file (index.js), Node loads it directly.
+
+When would maths/package.json become necessary?
+
+Suppose your package grows:
+
+maths/
+│
+├── esm.js
+├── cjs.js
+└── package.json
+
+Now you want:
+
+import { num } from "maths";
+
+to load esm.js, and
+
+const num = require("maths");
+
+to load cjs.js.
+
+Then you need:
+
+{
+  "exports": {
+    "import": "./esm.js",
+    "require": "./cjs.js"
+  }
+}
+
+Without that package.json, Node wouldn't know which file to choose.
+
+So your experiment works because it's the simplest possible package:
+
+only one entry file (index.js)
+no multiple entry points
+no conditional exports
+
+As soon as you need different behavior for import and require, or additional metadata, a package.json inside the package becomes necessary.

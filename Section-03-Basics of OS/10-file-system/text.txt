@@ -1,0 +1,13 @@
+Absolute Path => C:\Users\user\Desktop\web-dev\NodeJS\Secton-3\10-file-system\text.txt
+
+=> How to separate paths in Windows?
+Ans => In windows we use back slash (\) for path separation
+
+Relative Path => text.txt
+or
+relative Path =>  1. src
+                  2. src\newText
+                      or
+                     .\src\newText 
+                     Both are same
+                  

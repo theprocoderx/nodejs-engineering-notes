@@ -1,0 +1,1 @@
+echo "Running text.bat"

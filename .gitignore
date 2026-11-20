@@ -1,0 +1,158 @@
+
+# ==========================================
+# Dependencies
+# ==========================================
+node_modules/
+
+# ==========================================
+# Environment Variables & Secrets
+# ==========================================
+.env
+.env.*
+!.env.example
+
+# ==========================================
+# Debug Logs
+# ==========================================
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+logs/
+
+# ==========================================
+# Build Output
+# ==========================================
+dist/
+build/
+out/
+
+# ==========================================
+# Test & Coverage Reports
+# ==========================================
+coverage/
+.nyc_output/
+
+# ==========================================
+# Cache
+# ==========================================
+.cache/
+.parcel-cache/
+.npm/
+.eslintcache/
+.stylelintcache/
+.vite/
+
+# ==========================================
+# Operating System Files
+# ==========================================
+.DS_Store
+.DS_Store?
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ==========================================
+# Editor & IDE Files
+# ==========================================
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# ==========================================
+# Temporary Files
+# ==========================================
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*.orig
+
+# ==========================================
+# Audio Files
+# ==========================================
+*.mp3
+*.wav
+*.aac
+*.m4a
+*.ogg
+*.oga
+*.flac
+*.wma
+*.aiff
+*.aif
+*.opus
+*.mid
+*.midi
+
+# ==========================================
+# Video Files
+# ==========================================
+*.mp4
+*.m4v
+*.mov
+*.avi
+*.mkv
+*.webm
+*.wmv
+*.flv
+*.mpeg
+*.mpg
+*.3gp
+*.ts
+
+# ==========================================
+# Subtitle Files
+# ==========================================
+*.srt
+*.vtt
+*.ass
+*.ssa
+
+# ==========================================
+# Archive Files
+# ==========================================
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+
+# ==========================================
+# Disk Images
+# ==========================================
+*.iso
+*.img
+
+# ==========================================
+# Local Database Files
+# ==========================================
+*.sqlite
+*.sqlite3
+*.db
+
+# ==========================================
+# Generated Files
+# ==========================================
+*.tsbuildinfo
+# ==========================================
+# Nested Git Repositories (Keep code, ignore nested .git)
+# ==========================================
+Section-04-Fundamentals of Node.js/pcx-copy/.git/
+Section-04-Fundamentals of Node.js/pcx-word-counter/.git/
+Section-05-Data Representation in Computing/pcx-base-converter/.git/
+
+# Large generated data files
+Section-04-Fundamentals of Node.js/19_INTRODUCTION_TO_FS_MODULES/NPX_searching_steps.txt
+
+# Generated test data
+**/large-output.txt
+
+# Compiled Windows executables
+*.exe
+
+# Large Base64 demonstration fixtures
+**/all-files/video.txt
+**/all-files/nature.txt

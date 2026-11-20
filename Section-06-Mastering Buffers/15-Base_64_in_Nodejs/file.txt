@@ -1,0 +1,7 @@
+ab
+
+
+const str = "½ + ¼ = ¾";
+
+console.log(str.length);
+console.log(Buffer.byteLength(str, "utf8"));
