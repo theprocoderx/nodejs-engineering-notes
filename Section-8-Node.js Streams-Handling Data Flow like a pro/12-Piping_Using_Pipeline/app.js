@@ -1,55 +1,69 @@
-import fs from 'fs';
-import { pipeline } from 'stream';
+import { createReadStream, createWriteStream } from "node:fs";
+import { createGzip } from "node:zlib";
+import { pipeline as pipelinePromise } from "node:stream/promises";
+import { pipeline as pipelineCallback } from "node:stream";
 
-console.time('Copy Time');
+// Approach 1: Using pipe() with individual error listeners
 
-const readStream = fs.createReadStream(
-  'C:\\Users\\user\\Desktop\\streams.mp4',
-  { highWaterMark: 1 * 1024 * 1024 }
-);
-const writeStream = fs.createWriteStream('streams.mp4');
+function compressUsingPipe() {
+  const readable = createReadStream("input.txt");
+  const gzip = createGzip();
+  const writable = createWriteStream("pipe-output.gz");
 
-pipeline(readStream, writeStream, (err) => {
-  console.log(err);
-});
+  readable.on("error", (error) => {
+    console.error("Readable error:", error.message);
+  });
 
-// readStream.pipe(writeStream);
-// Errors ko handle karna zaroori hai
-// readStream.on('error', (err) => {
-//   console.error('Read error:', err);
-// });
+  gzip.on("error", (error) => {
+    console.error("Gzip error:", error.message);
+  });
 
+  writable.on("error", (error) => {
+    console.error("Writable error:", error.message);
+  });
 
-// setTimeout(() => {
-//   readStream.destroy('khatam');
-// }, 1000);
+  readable.pipe(gzip).pipe(writable);
+  console.log(
+    "Using .pipe() with individual error listener: Compression successful!",
+  );
+}
 
-// setInterval(() => {
-//   console.log('Hii');
-// }, 200);
+// Approach 2: Using Promise-based pipeline() with async/await
 
-// readStream.on('data', (chunk) => {
-//   const isEmpty = writeStream.write(chunk);
-//   if (!isEmpty) {
-//     readStream.pause();
-//   }
-// });
+async function compressUsingPromise() {
+  try {
+    await pipelinePromise(
+      createReadStream("input.txt"),
+      createGzip(),
+      createWriteStream("promise-output.gz"),
+    );
 
-// writeStream.on('drain', () => {
-//   readStream.resume();
-// });
+    console.log("Promise: Compression successful!");
+  } catch (error) {
+    console.error("Promise: Pipeline failed:", error.message);
+  }
+}
 
-// Jab read poora ho jaye, tab write stream ko end karein
-readStream.on('end', () => {
-  writeStream.end();
-});
+// Approach 3: Using callback-based pipeline()
 
-// Jab file disk par poori tarah write aur save ho jaye ('finish' event)
-writeStream.on('finish', () => {
-  console.timeEnd('Copy Time');
-  console.log('File successfully copy ho gayi hai!');
-});
+function compressUsingCallback() {
+  pipelineCallback(
+    createReadStream("input.txt"),
+    createGzip(),
+    createWriteStream("callback-output.gz"),
+    (error) => {
+      if (error) {
+        console.error("Callback: Pipeline failed:", error.message);
+        return;
+      }
 
-// writeStream.on('error', (err) => {
-//   console.error('Write error:', err);
-// });
+      console.log("Callback: Compression successful!");
+    },
+  );
+}
+
+// Run only one approach at a time while learning.
+
+// compressUsingPipe();
+// compressUsingPromise();
+compressUsingCallback();

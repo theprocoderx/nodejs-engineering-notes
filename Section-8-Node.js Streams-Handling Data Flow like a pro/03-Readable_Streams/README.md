@@ -1,410 +1,393 @@
 # Readable Streams in Node.js
 
-## 1. Introduction to Readable Streams
-
-A **Readable Stream** is a type of stream used to read or consume data from a source in chunks.
-
-Instead of loading the entire data into memory at once, a Readable Stream allows us to process data incrementally as it becomes available.
-
-Readable Streams are commonly used when working with:
+A Readable Stream is a stream from which data can be read.
+It provides an interface for consuming data from a source in smaller chunks rather than loading the entire data into memory.
+In Node.js, Readable Streams are commonly used for:
 
 - Reading files.
-- Receiving HTTP requests.
-- Reading data from databases.
+- Receiving HTTP request data.
+- Reading data from network connections.
 - Processing large datasets.
-- Reading user input from the terminal.
-- Receiving data over network connections.
+- Consuming data from standard input (process.stdin).
+  Let's understand how Readable Streams work, starting with their creation and then moving to events and reading modes.
 
-### Example: Reading a File
+## 1. What is a Readable Stream?
 
-Node.js provides the `fs.createReadStream()` method to create a Readable Stream from a file.
-
-```js
-import fs from 'node:fs';
-
-const readableStream = fs.createReadStream('./example.txt');
-
-readableStream.on('data', (chunk) => {
-  console.log(chunk);
-});
-
-readableStream.on('end', () => {
-  console.log('Finished reading the file.');
-});
-```
-
-In this example:
-
-1. `createReadStream()` creates a Readable Stream.
-2. The `data` event is emitted whenever a chunk of data is available.
-3. The `end` event is emitted when there is no more data to read.
-
----
-
-## 2. How Readable Streams Work
-
-A Readable Stream has an internal buffer that temporarily stores chunks of data before they are consumed.
-
-The general workflow is:
+Consider a file named large-file.txt containing:
 
 ```text
-       Data Source
-            |
-            v
-      Readable Stream
-            |
-            v
-      Internal Buffer
-            |
-            v
-       Consumer
+Hello Node.js!
+Welcome to the world of Streams.
+Learning Readable Streams.
 ```
 
-For example, when reading a file:
-
-1. Node.js reads data from the file.
-2. The data is stored in the stream's internal buffer.
-3. The consumer reads the available chunks.
-4. The process continues until the entire file has been consumed.
-
-### Important Concepts
-
-| Concept         | Description                                  |
-| --------------- | -------------------------------------------- |
-| Source          | The origin from which data is read           |
-| Chunk           | A small piece of data                        |
-| Internal Buffer | Temporarily stores chunks before consumption |
-| Consumer        | The code that reads or processes the data    |
-| `highWaterMark` | Defines the buffering threshold              |
-
----
-
-## 3. Reading Data Using the `data` Event
-
-Readable Streams can be consumed using the `data` event.
-
-When a Readable Stream is in flowing mode, it emits `data` events whenever chunks become available.
-
-### Example
+Suppose you want to read this file.
+You can use fs.readFile() to read the entire file, or fs.createReadStream() to read it incrementally.
 
 ```js
-import fs from 'node:fs';
+import fs from "node:fs";
 
-const readableStream = fs.createReadStream('./example.txt');
-
-readableStream.on('data', (chunk) => {
-  console.log('Received chunk:', chunk);
-});
-
-readableStream.on('end', () => {
-  console.log('Reading completed.');
-});
-
-readableStream.on('error', (error) => {
-  console.error('Stream error:', error.message);
-});
+const readableStream = fs.createReadStream("large-file.txt");
 ```
 
-### Understanding the `data` Event
+Here:
 
-- Emitted whenever a chunk of data is available.
-- Automatically consumes chunks from the internal buffer.
-- Typically places the stream into flowing mode.
+- fs is Node.js's built-in File System module.
+- createReadStream() creates a Readable Stream.
+- readableStream is an instance of fs.ReadStream, which extends Node.js's Readable stream.
+  The stream reads data from the file and makes it available to your application in chunks.
 
-**Important:** The `data` event is useful when you want to process incoming chunks as they arrive.
+## 2. How Does Node.js Read Data?
 
----
+When you create a Readable Stream, Node.js does not necessarily read the entire file immediately.
+Instead, it manages an internal buffer and makes data available as the consumer requests or receives it.
+The basic process looks like this:
 
-## 4. Reading Data Using the `read()` Method
+```text
++---------------+      +-----------------+      +-----------------+      +----------+
+|  Source File  | ---> | Readable Stream | ---> | Internal Buffer | ---> | Consumer |
+| large-file.txt|      | Reads data from |      | Temporarily     |      | Your app |
+|               |      | the source      |      | holds available |      | processes|
+|               |      |                 |      | chunks          |      | the data |
++---------------+      +-----------------+      +-----------------+      +----------+
+```
 
-The `read()` method allows us to read data manually from a Readable Stream's internal buffer.
-
-Unlike the `data` event, which automatically delivers chunks, `read()` gives us control over when data is consumed.
-
-### Syntax
+An important concept here is the internal buffer.
+A Readable Stream maintains an internal buffer that temporarily stores data waiting to be consumed.
+The highWaterMark property controls the buffering threshold.
+For example:
 
 ```js
-readableStream.read([size]);
+const readableStream = fs.createReadStream("large-file.txt", {
+  highWaterMark: 1024,
+});
 ```
 
-- `size`: Optional number of bytes to read.
-- Returns a chunk of data or `null` when no data is currently available.
+Here, highWaterMark: 1024 sets the buffering threshold to 1024 bytes (1 KB).
+It is important to understand that highWaterMark is a threshold, not a strict guarantee that the buffer can never exceed that size.
+For a regular file Readable Stream, the default highWaterMark is generally 64 KB.
 
-### Example
+## 3. Readable Stream Events
+
+Node.js Readable Streams emit several events that help you understand and control the reading process.
+Let's focus on three important events:
+
+1. data
+2. end
+3. error
+
+### A. data Event
+
+The 'data' event is emitted whenever a chunk of data becomes available to a Readable Stream in flowing mode.
+Example:
 
 ```js
-import fs from 'node:fs';
+import fs from "node:fs";
 
-const readableStream = fs.createReadStream('./example.txt');
+const readableStream = fs.createReadStream("large-file.txt");
 
-readableStream.on('readable', () => {
-  let chunk;
-
-  while ((chunk = readableStream.read()) !== null) {
-    console.log('Received:', chunk);
-  }
-});
-
-readableStream.on('end', () => {
-  console.log('Reading completed.');
+readableStream.on("data", (chunk) => {
+  console.log(chunk);
 });
 ```
 
-### Understanding the `readable` Event
+What happens here?
 
-The `readable` event indicates that data is available to be read from the internal buffer.
+1. Node.js creates a Readable Stream.
+2. The stream starts reading the file.
+3. When a chunk becomes available, it emits the 'data' event.
+4. The callback receives that chunk.
+5. The process continues until the stream finishes or an error occurs.
+   If you want to see the actual text rather than a Buffer, use:
 
-It is commonly used with the `read()` method to consume data manually.
+```js
+readableStream.on("data", (chunk) => {
+  console.log(chunk.toString());
+});
+```
 
-**Important:** Do not confuse the `readable` event with the `data` event.
+Remember: attaching a 'data' listener switches a Readable Stream into flowing mode.
 
-- `data` automatically delivers chunks.
-- `readable` notifies us that data is available, allowing us to call `read()` manually.
+### B. end Event
 
----
+The 'end' event is emitted when there is no more data available to consume from the Readable Stream.
+Example:
 
-## 5. Flowing Mode vs Paused Mode
+```js
+readableStream.on("end", () => {
+  console.log("File reading completed!");
+});
+```
 
-Readable Streams operate in two major reading modes:
+The important distinction:
+
+- 'data' tells you that a chunk is available.
+- 'end' tells you that all readable data has been consumed.
+  The 'end' event is not emitted if the stream is destroyed prematurely.
+
+### C. error Event
+
+The 'error' event is emitted when an error occurs while reading or operating on the stream.
+For example, the file might not exist or the application might not have permission to read it.
+
+```js
+readableStream.on("error", (error) => {
+  console.error("Stream error:", error.message);
+});
+```
+
+You should handle stream errors explicitly, especially in production applications.
+Important: Attach an 'error' listener to handle errors. An emitted 'error' event without a suitable listener can cause the process to throw an exception.
+
+## 4. Two Reading Modes in Node.js
+
+This is one of the most important concepts in Readable Streams.
+Node.js Readable Streams operate in two modes:
 
 1. Flowing Mode
 2. Paused Mode
+   The difference is how data is delivered to your application.
 
-### Flowing Mode
+### A. Flowing Mode
 
-In flowing mode, data is automatically read from the underlying system and delivered to the consumer as quickly as possible.
-
-The `data` event is commonly used in this mode.
-
-```js
-import fs from 'node:fs';
-
-const readableStream = fs.createReadStream('./example.txt');
-
-readableStream.on('data', (chunk) => {
-  console.log(chunk);
-});
-```
-
-### Paused Mode
-
-In paused mode, data remains in the internal buffer until the consumer explicitly requests it using the `read()` method.
+In flowing mode, data is automatically read from the underlying system and delivered to your application through 'data' events.
+You don't need to manually request each chunk.
+Example:
 
 ```js
-import fs from 'node:fs';
+import fs from "node:fs";
 
-const readableStream = fs.createReadStream('./example.txt');
+const readableStream = fs.createReadStream("large-file.txt");
 
-readableStream.on('readable', () => {
-  let chunk;
-
-  while ((chunk = readableStream.read()) !== null) {
-    console.log(chunk);
-  }
-});
-```
-
-### Comparison
-
-| Flowing Mode                               | Paused Mode                                |
-| ------------------------------------------ | ------------------------------------------ |
-| Data is delivered automatically            | Data is consumed manually                  |
-| Commonly uses the `data` event             | Commonly uses `readable` and `read()`      |
-| Less control over when chunks are consumed | More control over when chunks are consumed |
-| Useful for straightforward data processing | Useful for controlled reading              |
-
----
-
-## 6. Important Readable Stream Events
-
-| Event      | Description                                                     |
-| ---------- | --------------------------------------------------------------- |
-| `data`     | Emitted when a chunk of data is available in flowing mode       |
-| `end`      | Emitted when there is no more data to consume                   |
-| `error`    | Emitted when an error occurs                                    |
-| `readable` | Emitted when data becomes available to be read                  |
-| `close`    | Emitted when the stream and its underlying resources are closed |
-
-### Important Note
-
-The `end` event is emitted only after the stream has been fully consumed.
-
-The `close` event indicates that the stream has been closed. It is not guaranteed to occur in every stream implementation.
-
----
-
-## 7. Important Readable Stream Methods
-
-| Method       | Description                                       |
-| ------------ | ------------------------------------------------- |
-| `read()`     | Reads data from the internal buffer               |
-| `pause()`    | Stops emitting `data` events                      |
-| `resume()`   | Resumes flowing mode                              |
-| `isPaused()` | Returns whether the stream is currently paused    |
-| `pipe()`     | Connects a Readable Stream to a Writable Stream   |
-| `unpipe()`   | Removes a destination from a Readable Stream      |
-| `unshift()`  | Pushes a chunk back into the internal buffer      |
-| `destroy()`  | Destroys the stream and optionally emits an error |
-
----
-
-## 8. Understanding `highWaterMark`
-
-The `highWaterMark` option defines the buffering threshold for a Readable Stream.
-
-It controls how much data the stream attempts to store in its internal buffer before it stops requesting more data from the underlying resource.
-
-### Example
-
-```js
-import fs from 'node:fs';
-
-const readableStream = fs.createReadStream('./example.txt', {
-  highWaterMark: 4,
-});
-
-readableStream.on('data', (chunk) => {
-  console.log(chunk);
-});
-```
-
-In this example, the stream uses a `highWaterMark` of 4 bytes.
-
-For a file Readable Stream, this means Node.js will generally read data in chunks of up to 4 bytes.
-
-**Important:** `highWaterMark` is a buffering threshold, not a strict maximum memory limit.
-
----
-
-## 9. Creating a Custom Readable Stream
-
-Node.js allows us to create our own Readable Streams by extending the `Readable` class from the `node:stream` module.
-
-To implement a custom Readable Stream, we need to define the `_read()` method.
-
-### Understanding `_read()`
-
-The `_read()` method is an internal method that should be implemented by custom Readable Streams.
-
-It is called by the stream implementation when more data is needed.
-
-We provide data to the stream using:
-
-```js
-this.push(chunk);
-```
-
-When no more data is available, we signal the end of the stream using:
-
-```js
-this.push(null);
-```
-
-### Example
-
-```js
-import { Readable } from 'node:stream';
-
-class CustomReadable extends Readable {
-  constructor(options) {
-    super(options);
-
-    this.index = 1;
-  }
-
-  _read() {
-    if (this.index <= 5) {
-      this.push(`Chunk ${this.index}\n`);
-      this.index++;
-    } else {
-      this.push(null);
-    }
-  }
-}
-
-const readableStream = new CustomReadable();
-
-readableStream.on('data', (chunk) => {
+readableStream.on("data", (chunk) => {
   console.log(chunk.toString());
 });
 
-readableStream.on('end', () => {
-  console.log('Reading completed.');
+readableStream.on("end", () => {
+  console.log("Reading completed!");
+});
+
+readableStream.on("error", (error) => {
+  console.error(error.message);
 });
 ```
 
-### Output
+How it works:
+
+1. The stream starts reading data.
+2. A chunk becomes available.
+3. The stream emits a 'data' event.
+4. Your callback receives the chunk.
+5. This continues until all data has been consumed.
 
 ```text
-Chunk 1
-Chunk 2
-Chunk 3
-Chunk 4
-Chunk 5
-Reading completed.
++-----------------+      +------------------------+      +----------+
+| Readable Stream | ---> | Chunk 1 / Chunk 2 / ...| ---> | Consumer |
+|                 |      | Automatically delivered|      | Receives |
+|                 |      | through 'data' events  |      | chunks   |
++-----------------+      +------------------------+      +----------+
 ```
 
-### Understanding the Example
+### B. Paused Mode
 
-1. We extend the `Readable` class.
-2. We implement the `_read()` method.
-3. Each call to `_read()` pushes a new chunk into the stream.
-4. Once all chunks have been pushed, `this.push(null)` signals the end of the stream.
-5. The consumer receives the chunks through the `data` event.
+In paused mode, the stream does not automatically deliver chunks through 'data' events.
+Instead, your application controls when to read data using the read() method.
+Example:
 
-**Important:** Do not call `_read()` directly. Node.js manages when it needs more data.
+```js
+import fs from "node:fs";
 
----
+const readableStream = fs.createReadStream("large-file.txt");
 
-## 10. Real-World Applications
+readableStream.on("readable", () => {
+  let chunk;
 
-Readable Streams are used in many real-world applications.
+  while ((chunk = readableStream.read()) !== null) {
+    console.log(chunk.toString());
+  }
+});
 
-| Use Case              | Example                                           |
-| --------------------- | ------------------------------------------------- |
-| File Reading          | Reading large files using `fs.createReadStream()` |
-| HTTP Requests         | Reading incoming request bodies                   |
-| Network Communication | Receiving data through TCP sockets                |
-| Database Operations   | Consuming query results incrementally             |
-| Data Processing       | Processing large datasets chunk by chunk          |
-| File Uploads          | Receiving uploaded file data                      |
+readableStream.on("end", () => {
+  console.log("Reading completed!");
+});
 
----
+readableStream.on("error", (error) => {
+  console.error(error.message);
+});
+```
 
-## 11. Practical Exercises
+Let's understand the important part:
 
-Practice the following examples to understand Readable Streams more deeply.
+```js
+let chunk;
 
-- [ ] Read a text file using `fs.createReadStream()`.
-- [ ] Observe how the `data` event receives chunks.
-- [ ] Change the `highWaterMark` value and compare chunk sizes.
-- [ ] Read data using the `read()` method.
-- [ ] Compare flowing mode and paused mode.
-- [ ] Use `pause()` and `resume()` to control data consumption.
-- [ ] Create a custom Readable Stream using the `Readable` class.
-- [ ] Handle stream errors using the `error` event.
-- [ ] Read a large file without loading the entire file into memory.
+while ((chunk = readableStream.read()) !== null) {
+  console.log(chunk.toString());
+}
+```
 
----
+- read() retrieves data from the internal buffer.
+- It returns a chunk when data is available.
+- It returns null when no data is currently available.
+  The 'readable' event indicates that data can be read from the stream.
+  Important: read() returning null does not necessarily mean the stream has finished. More data might arrive later. The 'end' event indicates that no more data remains to be consumed.
 
-## 12. Key Takeaways
+```text
++-----------------+      +-----------------+      +----------------------+      +----------+
+| Readable Stream | ---> | Internal Buffer | <--- | Application requests | ---> | Consumer |
+|                 |      |                 |      | data via read()      |      | Processes|
+|                 |      |                 |      |                      |      | chunks   |
++-----------------+      +-----------------+      +----------------------+      +----------+
+```
 
-- A Readable Stream is used to consume data incrementally.
-- Data is delivered in chunks instead of loading everything into memory.
-- The `data` event is commonly used in flowing mode.
-- The `readable` event and `read()` method provide manual control over reading.
-- Readable Streams support flowing and paused modes.
-- `highWaterMark` defines the internal buffering threshold.
-- Custom Readable Streams can be created by extending the `Readable` class.
-- The `_read()` method is responsible for providing data to a custom Readable Stream.
-- `this.push(null)` signals that no more data will be provided.
+### Flowing Mode vs Paused Mode
 
----
+| Feature        | Flowing Mode       | Paused Mode             |
+| :------------- | :----------------- | :---------------------- |
+| Data delivery  | Automatic          | Controlled by consumer  |
+| Main event     | data               | readable                |
+| Reading method | Automatic delivery | read()                  |
+| Control        | pause() / resume() | Call read() when needed |
 
-## 13. Official Documentation
+When should you use each?
 
-- [Node.js Streams Documentation](https://nodejs.org/api/stream.html)
-- [Node.js File System Documentation](https://nodejs.org/api/fs.html)
-- [Node.js Readable Streams](https://nodejs.org/api/stream.html#class-streamreadable)
+- Flowing mode: When you want to receive and process chunks automatically.
+- Paused mode: When you want more direct control over when data is consumed.
 
-**Next Chapter:** Writable Streams in Node.js
+## 5. How to Control a Readable Stream
+
+Node.js provides methods to control the reading process.
+The most important methods are:
+
+- pause()
+- resume()
+- read()
+- isPaused()
+- destroy()
+
+### A. pause()
+
+The pause() method stops a flowing Readable Stream from emitting further 'data' events.
+Example:
+
+```js
+import fs from "node:fs";
+
+const readableStream = fs.createReadStream("large-file.txt");
+
+readableStream.on("data", (chunk) => {
+  console.log(chunk.toString());
+
+  readableStream.pause();
+
+  console.log("Stream paused!");
+});
+```
+
+Here, the stream pauses after delivering a chunk.
+Important: pause() does not erase the buffered data or permanently stop the stream. Data can continue accumulating in the internal buffer up to the stream's buffering behavior.
+
+### B. resume()
+
+The resume() method restarts a paused Readable Stream and allows it to emit 'data' events again.
+Example:
+
+```js
+import fs from "node:fs";
+
+const readableStream = fs.createReadStream("large-file.txt");
+
+readableStream.on("data", (chunk) => {
+  console.log(chunk.toString());
+
+  readableStream.pause();
+
+  setTimeout(() => {
+    console.log("Resuming stream...");
+    readableStream.resume();
+  }, 1000);
+});
+```
+
+Here:
+
+1. The stream emits a chunk.
+2. We pause the stream.
+3. We wait for one second.
+4. We resume the stream.
+5. The next chunks continue arriving.
+   This is useful when you need to temporarily slow down data consumption.
+
+### C. read()
+
+The read() method retrieves data from the internal buffer of a Readable Stream.
+
+```js
+const chunk = readableStream.read();
+```
+
+It returns:
+
+- A chunk if data is available.
+- null if no data is currently available.
+  You can also specify how much data to read:
+
+```js
+const chunk = readableStream.read(10);
+```
+
+This requests up to 10 bytes from the stream in byte mode.
+Remember that read() is primarily used in paused mode.
+
+### D. isPaused()
+
+The isPaused() method checks whether a Readable Stream is currently paused.
+
+```js
+console.log(readableStream.isPaused());
+```
+
+It returns a Boolean:
+
+```text
+true  // Stream is paused.
+false // Stream is not paused.
+```
+
+### E. destroy()
+
+The destroy() method destroys the stream and optionally accepts an error.
+
+```js
+readableStream.destroy();
+```
+
+Once destroyed, the stream cannot be used to continue reading.
+This is useful when you want to stop processing a stream because of an error, cancellation, or application requirement.
+
+## 6. Important Events and Methods – Quick Reference
+
+| Event / Method | Purpose                                       |
+| :------------- | :-------------------------------------------- |
+| data           | Receives chunks in flowing mode               |
+| end            | Indicates all readable data has been consumed |
+| error          | Reports a stream error                        |
+| readable       | Indicates data is available to read           |
+| read()         | Retrieves data from the internal buffer       |
+| pause()        | Stops flowing-mode data delivery              |
+| resume()       | Restarts flowing-mode data delivery           |
+| isPaused()     | Checks whether the stream is paused           |
+| destroy()      | Destroys the stream                           |
+
+## 7. Important Things to Remember
+
+Before moving forward, keep these points clear:
+
+1. A Readable Stream maintains an internal buffer.
+2. highWaterMark controls the buffering threshold.
+3. In flowing mode, chunks are delivered automatically through 'data' events.
+4. In paused mode, you retrieve chunks using read().
+5. pause() and resume() control flowing-mode data delivery.
+6. end means all readable data has been consumed.
+7. destroy() terminates the stream; it does not mean normal reading completed.
+   One additional distinction: The 'end' and 'close' events are not the same. 'end' indicates successful consumption of all readable data, whereas 'close' indicates that the stream and its underlying resources have been closed. A stream can close without emitting 'end', for example, if it is destroyed prematurely.
