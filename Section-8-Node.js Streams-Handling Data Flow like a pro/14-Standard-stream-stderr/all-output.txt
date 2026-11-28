@@ -1,0 +1,4 @@
+Normal application output.
+Application information.
+Warning: Configuration is missing.
+Error: File not found.
